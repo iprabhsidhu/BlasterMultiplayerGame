@@ -9,7 +9,7 @@
 USTRUCT(BlueprintType)
 struct FHUDPackage
 {
-	GENERATED_BODY();
+	GENERATED_BODY()
 
 public:
 	class UTexture2D* CrosshairCenter;

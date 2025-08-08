@@ -108,7 +108,7 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 		if (Character)
 		{
 			float DistanceToCharacter = (Character->GetActorLocation() - Start).Size();
-			Start += CrosshairWorldDirection * (DistanceToCharacter * 100.f);
+			Start += CrosshairWorldDirection * (DistanceToCharacter + 100.f);
 		}
 
 		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
@@ -120,7 +120,7 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 			TraceHitResult.ImpactPoint = End;
 		}
 
-		if (TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<IInteractWithCrosshairInterface>())
+		if (TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<UInteractWithCrosshairInterface>())
 		{
 			HUDPackage.CrosshairColor = FLinearColor::Red;
 		}
