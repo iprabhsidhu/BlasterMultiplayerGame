@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "BlasterCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -16,11 +15,10 @@
 // Sets default values
 ABlasterCharacter::ABlasterCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	bUseControllerRotationYaw = false;
-	
+
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 850.f, 0.f);
 
@@ -52,7 +50,6 @@ ABlasterCharacter::ABlasterCharacter()
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 void ABlasterCharacter::MoveForward(float Value)
@@ -91,21 +88,40 @@ void ABlasterCharacter::Jump()
 	{
 		UnCrouch();
 	}
-	else Super::Jump();
+	else
+	{
+		Super::Jump();
+	}
 }
 
 void ABlasterCharacter::EquipButtonPressed()
 {
-	if (Combat)
+	UE_LOG(LogTemp, Warning, TEXT("Equip pressed (Local=%d, Auth=%d)  Overlap=%s"),
+		IsLocallyControlled() ? 1 : 0,
+		HasAuthority() ? 1 : 0,
+		OverlappingWeapon ? *OverlappingWeapon->GetName() : TEXT("NULL"));
+
+	if (!Combat)
 	{
-		if (HasAuthority())
-		{
-			Combat->EquipWeapon(OverlappingWeapon);
-		}
-		else
-		{
-			ServerEquipButtonPressed();
-		}
+		UE_LOG(LogTemp, Error, TEXT("Equip aborted: Combat == nullptr"));
+		return;
+	}
+
+	if (!OverlappingWeapon)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Equip aborted: OverlappingWeapon is NULL (maybe EndOverlap fired just before?)"));
+		return;
+	}
+
+	if (HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SERVER: Direct equip %s"), *OverlappingWeapon->GetName());
+		Combat->EquipWeapon(OverlappingWeapon);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CLIENT: calling ServerEquipButtonPressed()"));
+		ServerEquipButtonPressed();
 	}
 }
 
@@ -115,7 +131,10 @@ void ABlasterCharacter::CrouchButtonPressed()
 	{
 		UnCrouch();
 	}
-	else { Crouch(); }
+	else
+	{
+		Crouch();
+	}
 }
 
 void ABlasterCharacter::AimButtonPressed()
@@ -137,6 +156,7 @@ void ABlasterCharacter::AimButtonReleased()
 void ABlasterCharacter::AimOffset(float DeltaTime)
 {
 	if (Combat && Combat->EquippedWeapon == nullptr) return;
+
 	FVector Velocity = GetVelocity();
 	Velocity.Z = 0.f;
 	float speed = Velocity.Size();
@@ -191,7 +211,7 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 	{
 		OverlappingWeapon->ShowPickupWidget(true);
 	}
-	
+
 	if (LastWeapon)
 	{
 		LastWeapon->ShowPickupWidget(false);
@@ -200,10 +220,21 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 
 void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
-	if (Combat && HasAuthority())
+	UE_LOG(LogTemp, Warning, TEXT("ServerEquipButtonPressed_Implementation Overlap=%s"),
+		OverlappingWeapon ? *OverlappingWeapon->GetName() : TEXT("NULL"));
+
+	if (!Combat)
 	{
-		Combat->EquipWeapon(OverlappingWeapon);
+		UE_LOG(LogTemp, Error, TEXT("ServerEquip: Combat == nullptr"));
+		return;
 	}
+	if (!OverlappingWeapon)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ServerEquip: OverlappingWeapon is NULL (EndOverlap race?)"));
+		return;
+	}
+
+	Combat->EquipWeapon(OverlappingWeapon);
 }
 
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
@@ -231,7 +262,8 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
 void ABlasterCharacter::HideCameraIfCharacterClose()
 {
 	if (!IsLocallyControlled()) return;
-	if((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() > CameraThreshold)
+
+	if ((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() > CameraThreshold)
 	{
 		GetMesh()->SetVisibility(true);
 		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
@@ -252,16 +284,30 @@ void ABlasterCharacter::HideCameraIfCharacterClose()
 // Server controlled
 void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
+	// Kurzschluss: gleiche Referenz nicht erneut verarbeiten
+	if (OverlappingWeapon == Weapon)
+	{
+		return;
+	}
+
 	if (OverlappingWeapon)
 	{
 		OverlappingWeapon->ShowPickupWidget(false);
 	}
+
 	OverlappingWeapon = Weapon;
+
 	if (IsLocallyControlled())
 	{
 		if (OverlappingWeapon)
 		{
 			OverlappingWeapon->ShowPickupWidget(true);
+			UE_LOG(LogTemp, Warning, TEXT("SetOverlappingWeapon -> %s (show widget)"),
+				*OverlappingWeapon->GetName());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SetOverlappingWeapon -> NULL (hide widget)"));
 		}
 	}
 }
@@ -284,8 +330,7 @@ AWeapon* ABlasterCharacter::GetEquippedWeapon()
 
 FVector ABlasterCharacter::GetHitTarget() const
 {
-	if(Combat == nullptr) return FVector();
-
+	if (Combat == nullptr) return FVector();
 	return Combat->HitTarget;
 }
 
@@ -327,10 +372,31 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void ABlasterCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+
+	// ------- RUNTIME-FALLBACK: Combat neu anlegen, falls Blueprint/Hot-Reload sie "verloren" hat ------
+	if (!Combat)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Combat was NULL in PostInitializeComponents on %s. Recreating at runtime."), *GetName());
+
+		Combat = NewObject<UCombatComponent>(this, UCombatComponent::StaticClass(), TEXT("CombatComponentRuntime"));
+		if (Combat)
+		{
+			Combat->RegisterComponent();
+			Combat->SetIsReplicated(true);
+		}
+	}
+
 	if (Combat)
 	{
 		Combat->Character = this;
+		UE_LOG(LogTemp, Warning, TEXT("Combat->Character wired for %s (Combat=%s)"),
+			*GetName(), *Combat->GetName());
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create Combat component at runtime."));
+	}
+	// ---------------------------------------------------------------------------------------------------
 }
 
 void ABlasterCharacter::PlayFireMontage(bool bAiming)
@@ -341,8 +407,7 @@ void ABlasterCharacter::PlayFireMontage(bool bAiming)
 	if (AnimInstance && FireWeaponMontage)
 	{
 		AnimInstance->Montage_Play(FireWeaponMontage);
-		FName SectionName;
-		SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
+		const FName SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
