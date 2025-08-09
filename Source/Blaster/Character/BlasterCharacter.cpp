@@ -96,17 +96,14 @@ void ABlasterCharacter::Jump()
 
 void ABlasterCharacter::EquipButtonPressed()
 {
-	if (Combat && HasAuthority())
-		if (Combat)
+	if (Combat)
+		if (HasAuthority())
 		{
-			if (HasAuthority())
-			{
-				Combat->EquipWeapon(OverlappingWeapon);
-			}
-			else
-			{
-				ServerEquipButtonPressed();
-			}
+			Combat->EquipWeapon(OverlappingWeapon);
+		}
+		else
+		{
+			ServerEquipButtonPressed();
 		}
 }
 
