@@ -96,33 +96,18 @@ void ABlasterCharacter::Jump()
 
 void ABlasterCharacter::EquipButtonPressed()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Equip pressed (Local=%d, Auth=%d)  Overlap=%s"),
-		IsLocallyControlled() ? 1 : 0,
-		HasAuthority() ? 1 : 0,
-		OverlappingWeapon ? *OverlappingWeapon->GetName() : TEXT("NULL"));
-
-	if (!Combat)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Equip aborted: Combat == nullptr"));
-		return;
-	}
-
-	if (!OverlappingWeapon)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Equip aborted: OverlappingWeapon is NULL (maybe EndOverlap fired just before?)"));
-		return;
-	}
-
-	if (HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SERVER: Direct equip %s"), *OverlappingWeapon->GetName());
-		Combat->EquipWeapon(OverlappingWeapon);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("CLIENT: calling ServerEquipButtonPressed()"));
-		ServerEquipButtonPressed();
-	}
+	if (Combat && HasAuthority())
+		if (Combat)
+		{
+			if (HasAuthority())
+			{
+				Combat->EquipWeapon(OverlappingWeapon);
+			}
+			else
+			{
+				ServerEquipButtonPressed();
+			}
+		}
 }
 
 void ABlasterCharacter::CrouchButtonPressed()
@@ -222,16 +207,8 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
 	if (Combat)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ServerEquip: Combat == nullptr"));
-		return;
+		Combat->EquipWeapon(OverlappingWeapon);
 	}
-	if (!OverlappingWeapon)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ServerEquip: OverlappingWeapon is NULL (EndOverlap race?)"));
-		return;
-	}
-
-	Combat->EquipWeapon(OverlappingWeapon);
 }
 
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
