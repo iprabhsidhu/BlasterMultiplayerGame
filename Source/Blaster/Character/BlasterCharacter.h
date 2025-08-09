@@ -25,6 +25,7 @@ public:
 	virtual void PostInitializeComponents() override;
 
 	void PlayFireMontage(bool bAiming);
+	void PlayHitReactMontage();
 
 protected:
 	// Called when the game starts or when spawned
@@ -79,6 +80,11 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	class UAnimMontage* FireWeaponMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* HitReactMontage;
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastHit();
 
 	UPROPERTY(EditAnywhere)
 	float CameraThreshold = 200.f;

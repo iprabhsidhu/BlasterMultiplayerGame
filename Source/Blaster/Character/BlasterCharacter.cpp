@@ -200,7 +200,7 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 
 void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
-	if (Combat && HasAuthority())
+	if (Combat)
 	{
 		Combat->EquipWeapon(OverlappingWeapon);
 	}
@@ -228,12 +228,17 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
 	}
 }
 
+void ABlasterCharacter::MulticastHit_Implementation()
+{
+
+}
+
 void ABlasterCharacter::HideCameraIfCharacterClose()
 {
 	if (!IsLocallyControlled()) return;
-	if((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() > CameraThreshold)
+	if((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
 	{
-		GetMesh()->SetVisibility(true);
+		GetMesh()->SetVisibility(false);
 		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
 		{
 			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
@@ -241,7 +246,7 @@ void ABlasterCharacter::HideCameraIfCharacterClose()
 	}
 	else
 	{
-		GetMesh()->SetVisibility(false);
+		GetMesh()->SetVisibility(true);
 		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
 		{
 			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
@@ -327,10 +332,31 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void ABlasterCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	
+	// ------- RUNTIME-FALLBACK: Combat neu anlegen, falls Blueprint/Hot-Reload sie "verloren" hat ------
+	if (!Combat)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Combat was NULL in PostInitializeComponents on %s. Recreating at runtime."), *GetName());
+
+		Combat = NewObject<UCombatComponent>(this, UCombatComponent::StaticClass(), TEXT("CombatComponentRuntime"));
+		if (Combat)
+		{
+			Combat->RegisterComponent();
+			Combat->SetIsReplicated(true);
+		}
+	}
+
 	if (Combat)
 	{
 		Combat->Character = this;
+		UE_LOG(LogTemp, Warning, TEXT("Combat->Character wired for %s (Combat=%s)"),
+			*GetName(), *Combat->GetName());
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create Combat component at runtime."));
+	}
+	// ---------------------------------------------------------------------------------------------------
 }
 
 void ABlasterCharacter::PlayFireMontage(bool bAiming)
@@ -343,6 +369,19 @@ void ABlasterCharacter::PlayFireMontage(bool bAiming)
 		AnimInstance->Montage_Play(FireWeaponMontage);
 		FName SectionName;
 		SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void ABlasterCharacter::PlayHitReactMontage()
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && HitReactMontage)
+	{
+		AnimInstance->Montage_Play(HitReactMontage);
+		FName SectionName("FromFront");
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
