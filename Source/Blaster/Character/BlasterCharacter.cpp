@@ -289,6 +289,15 @@ void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 
 bool ABlasterCharacter::IsWeaponEquipped()
 {
+	if (Combat)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Combat: %p"), Combat);
+		UE_LOG(LogTemp, Warning, TEXT("Equipped Weapon: %p"), Combat->EquippedWeapon);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Combat is NULL"));
+	}
 	return (Combat && Combat->EquippedWeapon);
 }
 
