@@ -54,6 +54,15 @@ void ABlasterCharacter::BeginPlay()
 	Super::BeginPlay();
 }
 
+void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(ABlasterCharacter, Health);
+}
+
+
 void ABlasterCharacter::MoveForward(float Value)
 {
 	if (Controller && Value != 0.f)
@@ -305,6 +314,11 @@ float ABlasterCharacter::CalculateSpeed()
 	return Velocity.Size();
 }
 
+void ABlasterCharacter::OnRep_Health()
+{
+
+}
+
 // Server controlled
 void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
@@ -391,13 +405,6 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis(TEXT("MoveSide"), this, &ThisClass::MoveSide);
 	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &ThisClass::LookUp);
 	PlayerInputComponent->BindAxis(TEXT("Turn"), this, &ThisClass::Turn);
-}
-
-void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
