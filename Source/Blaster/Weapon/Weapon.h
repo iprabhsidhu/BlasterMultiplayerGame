@@ -43,6 +43,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Crosshairs")
 	class UTexture2D* CrosshairBottom;
 
+	/*
+	*	Weapon Firing Mechanism
+	*/
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float FireDelay = 0.15f;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	bool bAutomaticFire = true;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

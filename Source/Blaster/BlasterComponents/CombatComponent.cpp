@@ -13,6 +13,7 @@
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "Blaster/HUD/BlasterHUD.h"
+#include "TimerManager.h"
 
 // Sets default values for this component's properties
 UCombatComponent::UCombatComponent()
@@ -33,6 +34,22 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(UCombatComponent, bAiming);
 }
 
+void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
+{
+	if (Character == nullptr || WeaponToEquip == nullptr) return;
+
+	EquippedWeapon = WeaponToEquip;
+	WeaponToEquip->SetWeaponState(EWeaponState::EWS_Equipped);
+	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+	if (HandSocket)
+	{
+		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+	}
+	EquippedWeapon->SetOwner(Character);
+	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+	Character->bUseControllerRotationYaw = true;
+}
+
 // Called when the game starts
 void UCombatComponent::BeginPlay()
 {
@@ -49,48 +66,6 @@ void UCombatComponent::BeginPlay()
 		}
 	}
 	
-}
-
-void UCombatComponent::SetAiming(bool bIsAiming)
-{
-	bAiming = bIsAiming;
-	ServerSetAiming(bIsAiming);
-	if (Character)
-	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
-	}
-}
-
-void UCombatComponent::OnRep_EquippedWeapon()
-{
-	if (Character && EquippedWeapon)
-	{
-		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
-		if (HandSocket)
-		{
-			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
-		}
-		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-		Character->bUseControllerRotationYaw = true;
-	}
-}
-
-void UCombatComponent::FireButtonPressed(bool bPressed)
-{
-	bFireButtonPressed = bPressed;
-
-	if (bFireButtonPressed)
-	{
-		FHitResult HitResult;
-		TraceUnderCrosshair(HitResult);
-		ServerFire(HitResult.ImpactPoint);
-
-		if (EquippedWeapon)
-		{
-			CrosshairShootFactor = 0.75;
-		}
-	}
 }
 
 void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
@@ -114,7 +89,7 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 		if (Character)
 		{
 			float DistanceToCharacter = (Character->GetActorLocation() - Start).Size();
-			Start += CrosshairWorldDirection * (DistanceToCharacter + 5.f);
+			Start += CrosshairWorldDirection * (DistanceToCharacter + 100.f);
 		}
 		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
 
@@ -124,14 +99,6 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 		{
 			TraceHitResult.ImpactPoint = End;
 		}
-
-		DrawDebugSphere(
-			GetWorld(),
-			TraceHitResult.ImpactPoint,
-			12.f,
-			12,
-			FColor::Red
-		);
 
 		if (TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<UInteractWithCrosshairInterface>())
 		{
@@ -213,6 +180,25 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 	}
 }
 
+void UCombatComponent::SetAiming(bool bIsAiming)
+{
+	bAiming = bIsAiming;
+	ServerSetAiming(bIsAiming);
+	if (Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
+void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
+{
+	bAiming = bIsAiming;
+	if (Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
 void UCombatComponent::InterpFOV(float DeltaTime)
 {
 	if (EquippedWeapon == nullptr) return;
@@ -228,6 +214,45 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 	if (Character && Character->GetFollowCamera())
 	{
 		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
+	}
+}
+
+void UCombatComponent::OnRep_EquippedWeapon()
+{
+	if (Character && EquippedWeapon)
+	{
+		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+		if (HandSocket)
+		{
+			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		}
+		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+		Character->bUseControllerRotationYaw = true;
+	}
+}
+
+void UCombatComponent::FireButtonPressed(bool bPressed)
+{
+	bFireButtonPressed = bPressed;
+
+	if (bFireButtonPressed)
+	{
+		Fire();
+	}
+}
+
+void UCombatComponent::Fire()
+{
+	if (bCanFire)
+	{
+		ServerFire(HitTarget);
+
+		if (EquippedWeapon)
+		{
+			CrosshairShootFactor = 0.75;
+		}
+		StartFireTimer();
 	}
 }
 
@@ -247,12 +272,21 @@ void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& Trac
 	MulticastFire(TraceHitTarget);
 }
 
-void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
+void UCombatComponent::StartFireTimer()
 {
-	bAiming = bIsAiming;
-	if (Character)
+	if (EquippedWeapon == nullptr || Character == nullptr) return;
+
+	Character->GetWorldTimerManager().SetTimer(FireTimer, this, &ThisClass::FireTimerFinish, EquippedWeapon->FireDelay);
+}
+
+void UCombatComponent::FireTimerFinish()
+{
+	if (EquippedWeapon == nullptr) return;
+
+	bCanFire = true;
+	if (bFireButtonPressed && EquippedWeapon->bAutomaticFire)
 	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+		Fire();
 	}
 }
 
@@ -271,20 +305,3 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 		InterpFOV(DeltaTime);
 	}
 }
-
-void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
-{
-	if (Character == nullptr || WeaponToEquip == nullptr) return;
-
-	EquippedWeapon = WeaponToEquip;
-	WeaponToEquip->SetWeaponState(EWeaponState::EWS_Equipped);
-	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
-	if (HandSocket)
-	{
-		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
-	}
-	EquippedWeapon->SetOwner(Character);
-	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-	Character->bUseControllerRotationYaw = true;
-}
-

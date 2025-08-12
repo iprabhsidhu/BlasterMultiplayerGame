@@ -24,6 +24,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
 
+	virtual void OnRep_ReplicatedMovement() override;
+
 	void PlayFireMontage(bool bAiming);
 	void PlayHitReactMontage();
 	UFUNCTION(NetMulticast, Unreliable)
@@ -39,6 +41,7 @@ protected:
 	void LookUp(float Value);
 	void Turn(float Value);
 	virtual void Jump() override;
+	void SimProxiesTurn();
 
 	// Actions
 	void EquipButtonPressed();
@@ -48,6 +51,8 @@ protected:
 
 	// Aim Offsets
 	void AimOffset(float DeltaTime);
+
+	void CalculateAO_Pitch();
 
 	// Fire Actions
 	void FireButtonPressed();
@@ -89,6 +94,16 @@ private:
 	float CameraThreshold = 200.f;
 	void HideCameraIfCharacterClose();
 
+	bool bRotateRootBone;
+	float TurnThreshold = 0.5f;
+	FRotator ProxyRotationLastFrame;
+	FRotator ProxyRotation;
+	float ProxyYaw;
+
+	float TimeSinceLastMovementReplication;
+
+	float CalculateSpeed();
+
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
 	bool IsWeaponEquipped();
@@ -99,4 +114,5 @@ public:
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 	FVector GetHitTarget() const;
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 };
