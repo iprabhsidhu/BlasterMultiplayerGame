@@ -26,6 +26,8 @@ public:
 
 	void PlayFireMontage(bool bAiming);
 	void PlayHitReactMontage();
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastHit();
 
 protected:
 	// Called when the game starts or when spawned
@@ -82,9 +84,6 @@ private:
 	class UAnimMontage* FireWeaponMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* HitReactMontage;
-
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastHit();
 
 	UPROPERTY(EditAnywhere)
 	float CameraThreshold = 200.f;

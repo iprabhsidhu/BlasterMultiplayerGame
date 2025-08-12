@@ -73,7 +73,6 @@ void UCombatComponent::OnRep_EquippedWeapon()
 		}
 		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 		Character->bUseControllerRotationYaw = true;
-		UE_LOG(LogTemp, Warning, TEXT("Weapon Equipped"));
 	}
 }
 
@@ -115,9 +114,8 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 		if (Character)
 		{
 			float DistanceToCharacter = (Character->GetActorLocation() - Start).Size();
-			Start += CrosshairWorldDirection * (DistanceToCharacter + 100.f);
+			Start += CrosshairWorldDirection * (DistanceToCharacter + 5.f);
 		}
-
 		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
 
 		GetWorld()->LineTraceSingleByChannel(TraceHitResult, Start, End, ECollisionChannel::ECC_Visibility);
@@ -127,8 +125,17 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 			TraceHitResult.ImpactPoint = End;
 		}
 
+		DrawDebugSphere(
+			GetWorld(),
+			TraceHitResult.ImpactPoint,
+			12.f,
+			12,
+			FColor::Red
+		);
+
 		if (TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<UInteractWithCrosshairInterface>())
 		{
+			UE_LOG(LogTemp, Warning, TEXT("character hit"));
 			HUDPackage.CrosshairColor = FLinearColor::Red;
 		}
 		else
@@ -165,7 +172,7 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 			}
 
 			/*
-			*	Calculating Crosshair spreadings
+			*	Calculating Crosshair spreading
 			*	Mapping speed [0, 600] -> [0,1]
 			*/
 			FVector2D SpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
@@ -280,6 +287,5 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	EquippedWeapon->SetOwner(Character);
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
-	UE_LOG(LogTemp, Warning, TEXT("Equip() called"));
 }
 

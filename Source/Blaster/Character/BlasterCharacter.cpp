@@ -10,6 +10,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Blaster/Weapon/Weapon.h"
+#include "Blaster/Blaster.h"
 #include "BlasterAnimInstance.h"
 
 // Sets default values
@@ -32,6 +33,7 @@ ABlasterCharacter::ABlasterCharacter()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
@@ -232,7 +234,7 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
 
 void ABlasterCharacter::MulticastHit_Implementation()
 {
-
+	PlayHitReactMontage();
 }
 
 void ABlasterCharacter::HideCameraIfCharacterClose()
@@ -277,27 +279,12 @@ void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 		if (OverlappingWeapon)
 		{
 			OverlappingWeapon->ShowPickupWidget(true);
-			UE_LOG(LogTemp, Warning, TEXT("SetOverlappingWeapon -> %s (show widget)"),
-				*OverlappingWeapon->GetName());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("SetOverlappingWeapon -> NULL (hide widget)"));
 		}
 	}
 }
 
 bool ABlasterCharacter::IsWeaponEquipped()
 {
-	if (Combat)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Combat: %p"), Combat);
-		UE_LOG(LogTemp, Warning, TEXT("Equipped Weapon: %p"), Combat->EquippedWeapon);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Combat is NULL"));
-	}
 	return (Combat && Combat->EquippedWeapon);
 }
 
@@ -357,7 +344,7 @@ void ABlasterCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	
-	// ------- RUNTIME-FALLBACK: Combat neu anlegen, falls Blueprint/Hot-Reload sie "verloren" hat ------
+	/* ------ - RUNTIME - FALLBACK: Combat neu anlegen, falls Blueprint / Hot - Reload sie "verloren" hat------
 	if (!Combat)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Combat was NULL in PostInitializeComponents on %s. Recreating at runtime."), *GetName());
@@ -380,7 +367,17 @@ void ABlasterCharacter::PostInitializeComponents()
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to create Combat component at runtime."));
 	}
-	// ---------------------------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------------------------- */
+
+	if (Combat)
+	{
+		Combat->Character = this;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Combat is null"));
+	}
+	
 }
 
 void ABlasterCharacter::PlayFireMontage(bool bAiming)
