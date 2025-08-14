@@ -28,8 +28,12 @@ public:
 
 	void PlayFireMontage(bool bAiming);
 	void PlayHitReactMontage();
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastHit();
+	void PlayElimMontage();
+	
+	void Elim();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastElim();
 
 protected:
 	// Called when the game starts or when spawned
@@ -58,6 +62,15 @@ protected:
 	void FireButtonPressed();
 	void FireButtonReleased();
 
+	/*
+	*	Health Dmaage
+	*/
+	bool bElim = false;
+
+	UFUNCTION()
+	void RecieveDamage(AActor* DamageActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
+	void UpdateHUDHealth();
+	
 private:
 	UPROPERTY(VisibleAnywhere, Category="Camera")
 	class USpringArmComponent* CameraBoom;
@@ -89,6 +102,8 @@ private:
 	class UAnimMontage* FireWeaponMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* HitReactMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* ElimMontage;
 
 	UPROPERTY(EditAnywhere)
 	float CameraThreshold = 200.f;
@@ -112,8 +127,17 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player Stats | Health")
 	float Health = 100.f;
 
+	FTimerHandle ElimTimer;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player Stats | Health")
+	float ElimDelay = 3.f;
+
+	void ElimTimerFinish();
+
 	UFUNCTION()
 	void OnRep_Health();
+
+	class ABlasterPlayerController* BlasterPlayerController;
 
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
@@ -126,4 +150,5 @@ public:
 	FVector GetHitTarget() const;
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
+	FORCEINLINE bool GetEIsElimated() const { return bElim; }
 };
