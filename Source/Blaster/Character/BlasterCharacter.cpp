@@ -43,6 +43,8 @@ ABlasterCharacter::ABlasterCharacter()
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combat->SetIsReplicated(true);
 
+	DissolvedTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolvedTimelineComponent"));
+
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
@@ -361,6 +363,24 @@ void ABlasterCharacter::OnRep_Health()
 	PlayHitReactMontage();
 }
 
+void ABlasterCharacter::UpdateDissolvedMaterial(float DissolvedValue)
+{
+	if (DynamicDissolveMaterialInstance)
+	{
+		DynamicDissolveMaterialInstance->SetScalarParameterValue("Dissolved", DissolvedValue);
+	}
+}
+
+void ABlasterCharacter::StartDissolved()
+{
+	DissolvedTrack.BindDynamic(this, &ThisClass::UpdateDissolvedMaterial);
+	if (DissolveCurve && DissolvedTimeline)
+	{
+		DissolvedTimeline->AddInterpFloat(DissolveCurve, DissolvedTrack);
+		DissolvedTimeline->Play();
+	}
+}
+
 // Server controlled
 void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
@@ -542,4 +562,14 @@ void ABlasterCharacter::MulticastElim_Implementation()
 {
 	bElim = true;
 	PlayElimMontage();
+
+	if (DissolvedMaterialInstance)
+	{
+		DynamicDissolveMaterialInstance = UMaterialInstanceDynamic::Create(DissolvedMaterialInstance, this);
+		GetMesh()->SetMaterial(0, DynamicDissolveMaterialInstance);
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Disolved"), 0.55f);
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Glow"), 100.f);
+	}
+
+	StartDissolved();
 }

@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Blaster/BlasterTypes/TurningInPlace.h"
 #include "Blaster/Interfaces/InteractWithCrosshairInterface.h"
+#include "Components/TimelineComponent.h"
 #include "BlasterCharacter.generated.h"
 
 UCLASS()
@@ -138,6 +139,29 @@ private:
 	void OnRep_Health();
 
 	class ABlasterPlayerController* BlasterPlayerController;
+
+	/*
+	*	Dynamic Eliminated Material
+	*/
+
+	UPROPERTY(VisibleAnywhere)
+	UTimelineComponent* DissolvedTimeline;
+
+	FOnTimelineFloat DissolvedTrack;
+
+	UPROPERTY(EditAnywhere)
+	UCurveFloat* DissolveCurve;
+
+	UFUNCTION()
+	void UpdateDissolvedMaterial(float DissolvedValue);
+
+	void StartDissolved();
+
+	UPROPERTY(VisibleAnywhere, Category = "Elim")
+	UMaterialInstanceDynamic* DynamicDissolveMaterialInstance;
+
+	UPROPERTY(EditAnywhere, Category = "Elim")
+	UMaterialInstance* DissolvedMaterialInstance;
 
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
