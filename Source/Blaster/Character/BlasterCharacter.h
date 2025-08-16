@@ -24,6 +24,7 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+	virtual void Destroyed() override;
 
 	virtual void OnRep_ReplicatedMovement() override;
 
@@ -39,7 +40,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	
 	// Character Motion
 	void MoveForward(float Value);
 	void MoveSide(float Value);
@@ -71,6 +72,9 @@ protected:
 	UFUNCTION()
 	void RecieveDamage(AActor* DamageActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
 	void UpdateHUDHealth();
+
+	// Poll for any releveant classes & Initialize the HUD
+	void PollInit();
 	
 private:
 	UPROPERTY(VisibleAnywhere, Category="Camera")
@@ -140,6 +144,15 @@ private:
 
 	class ABlasterPlayerController* BlasterPlayerController;
 
+	UPROPERTY(EditAnywhere, Category = "Player Stats | Elimination")
+	UParticleSystem* ElimBotEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats | Elimination")
+	UParticleSystemComponent*ElimBotComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats | Elimination")
+	class USoundCue* ElimBotSound;
+
 	/*
 	*	Dynamic Eliminated Material
 	*/
@@ -163,6 +176,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Elim")
 	UMaterialInstance* DissolvedMaterialInstance;
 
+	class ABlasterPlayerState* BlasterPlayerState;
+
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
 	bool IsWeaponEquipped();
@@ -175,4 +190,6 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 	FORCEINLINE bool GetEIsElimated() const { return bElim; }
+	FORCEINLINE float GetHealh() const { return Health; }
+	FORCEINLINE float GetMaxHealh() const { return MaxHealth; }
 };
