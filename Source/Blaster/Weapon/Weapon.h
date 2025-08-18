@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "WeaponTypes.h"
 #include "Weapon.generated.h"
 
 UENUM(BlueprintType)
@@ -26,6 +27,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void OnRep_Owner() override;
 	void ShowPickupWidget(bool bShowWidget);
 	virtual void Fire(const FVector& HitTarget);
 
@@ -52,6 +54,8 @@ public:
 	bool bAutomaticFire = true;
 
 	void Dropped();
+
+	void SetHUDAmmo();
 
 protected:
 	// Called when the game starts or when spawned
@@ -88,10 +92,33 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Aim")
 	float ZoomInterpSpeed = 20.f;
 
+	/*
+	*	Ammo
+	*/
+
+	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_Ammo, Category = "Ammo")
+	int32 Ammo;
+
+	UFUNCTION()
+	void OnRep_Ammo();
+
+	void SpendAmmo();
+
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+	int32 MagCapacity;
+
+	class ABlasterCharacter* BlasterOwnerCharacter;
+	class ABlasterPlayerController* BlasterOwnerController;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Type")
+	EWeaponType WeaponType;
+
 public:
 	void SetWeaponState(EWeaponState State);
 	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
+	bool IsAmmoEmpty() const;
+	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 };

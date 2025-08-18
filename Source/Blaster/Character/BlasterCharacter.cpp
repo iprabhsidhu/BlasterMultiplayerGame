@@ -632,4 +632,10 @@ void ABlasterCharacter::MulticastElim_Implementation()
 	{
 		UGameplayStatics::SpawnSoundAtLocation(GetWorld(),ElimBotSound, GetActorLocation());
 	}
+
+	// Reset Ammo
+	if (BlasterPlayerController)
+	{
+		BlasterPlayerController->SetHUDAmmo(0);
+	}
 }
