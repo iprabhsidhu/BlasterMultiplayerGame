@@ -7,6 +7,7 @@
 #include "Blaster/BlasterTypes/TurningInPlace.h"
 #include "Blaster/Interfaces/InteractWithCrosshairInterface.h"
 #include "Components/TimelineComponent.h"
+#include "Blaster/BlasterTypes/CombatState.h"
 #include "BlasterCharacter.generated.h"
 
 UCLASS()
@@ -30,6 +31,7 @@ public:
 
 	void PlayFireMontage(bool bAiming);
 	void PlayHitReactMontage();
+	void PlayReloadMontage();
 	void PlayElimMontage();
 	
 	void Elim();
@@ -54,6 +56,7 @@ protected:
 	void CrouchButtonPressed();
 	void AimButtonPressed();
 	void AimButtonReleased();
+	void ReloadButtonPressed();
 
 	// Aim Offsets
 	void AimOffset(float DeltaTime);
@@ -86,7 +89,7 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	class AWeapon* OverlappingWeapon;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat Component", meta = (AllowPrivateAccess = "true"))
 	class UCombatComponent* Combat;
 
 	FRotator StartingAimRotation;
@@ -107,6 +110,8 @@ private:
 	class UAnimMontage* FireWeaponMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* HitReactMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	class UAnimMontage* ReloadWeaponMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* ElimMontage;
 
@@ -192,4 +197,5 @@ public:
 	FORCEINLINE bool GetEIsElimated() const { return bElim; }
 	FORCEINLINE float GetHealh() const { return Health; }
 	FORCEINLINE float GetMaxHealh() const { return MaxHealth; }
+	ECombatState GetCombatState() const;
 };

@@ -52,10 +52,12 @@ public:
 	float FireDelay = 0.15f;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	bool bAutomaticFire = true;
-
 	void Dropped();
-
 	void SetHUDAmmo();
+	void AddAmmo(int32 AmmoToAdd);
+
+	UPROPERTY(EditAnywhere)
+	class USoundCue* EquipSound;
 
 protected:
 	// Called when the game starts or when spawned
@@ -121,4 +123,6 @@ public:
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
 	bool IsAmmoEmpty() const;
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
+	FORCEINLINE int32 GetAmmo() const { return Ammo; }
+	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 };
