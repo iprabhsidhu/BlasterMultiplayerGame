@@ -106,6 +106,14 @@ void ABlasterPlayerController::CheckTimeSync(float DeltaTime)
 void ABlasterPlayerController::OnMatchStateSet(FName State)
 {
 	MatchState = State;
+	if (MatchState == MatchState::InProgress)
+	{
+		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+		if (BlasterHUD)
+		{
+			BlasterHUD->AddCharacterOverlay();
+		}
+	}
 }
 
 void ABlasterPlayerController::OnRep_MatchState()
