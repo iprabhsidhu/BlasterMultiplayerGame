@@ -34,7 +34,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Match State | Time")
 	float WarmupTime = 10.f;
 	UPROPERTY(EditAnywhere, Category = "Match State | Time")
-	float CountdownTime = 10.f;
+	float CooldownTime = 10.f;
 	float LevelStartingTime = 0.f;
 
 protected:
@@ -42,5 +42,9 @@ protected:
 	virtual void OnMatchStateSet() override;
 
 private:
+	float CountdownTime = 0.f;
+
+public:
+	FORCEINLINE float GetCountdownTime() const { return CountdownTime; }
 
 };
