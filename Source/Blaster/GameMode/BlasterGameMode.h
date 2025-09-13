@@ -7,6 +7,15 @@
 #include "BlasterGameMode.generated.h"
 
 /**
+*	Match States
+*/
+namespace MatchState
+{
+	extern BLASTER_API const FName Cooldown; // Match duration has been reached. Display Cooldown Timer
+}
+
+
+/**
  * 
  */
 UCLASS()
@@ -21,7 +30,11 @@ public:
 	virtual void RequestRespawn(class ACharacter* ElimmedCharacter, AController* ElimmedController);
 
 	UPROPERTY(EditAnywhere, Category = "Match State | Time")
+	float MatchTime = 120.f;
+	UPROPERTY(EditAnywhere, Category = "Match State | Time")
 	float WarmupTime = 10.f;
+	UPROPERTY(EditAnywhere, Category = "Match State | Time")
+	float CountdownTime = 10.f;
 	float LevelStartingTime = 0.f;
 
 protected:
@@ -29,7 +42,5 @@ protected:
 	virtual void OnMatchStateSet() override;
 
 private:
-	float CountdownTime = 0.f;
-
 
 };
