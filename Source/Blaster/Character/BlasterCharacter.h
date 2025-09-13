@@ -39,6 +39,9 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
 
+	UPROPERTY(Replicated)
+	bool bDisabledGameplay = false;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -78,6 +81,8 @@ protected:
 
 	// Poll for any releveant classes & Initialize the HUD
 	void PollInit();
+
+	void RotateInPlace(float DeltaTime);
 	
 private:
 	UPROPERTY(VisibleAnywhere, Category="Camera")
@@ -182,7 +187,7 @@ private:
 	UMaterialInstance* DissolvedMaterialInstance;
 
 	class ABlasterPlayerState* BlasterPlayerState;
-
+	
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
 	bool IsWeaponEquipped();
@@ -198,4 +203,6 @@ public:
 	FORCEINLINE float GetHealh() const { return Health; }
 	FORCEINLINE float GetMaxHealh() const { return MaxHealth; }
 	ECombatState GetCombatState() const;
+	FORCEINLINE UCombatComponent* GetCombat() const { return Combat; }
+	FORCEINLINE bool GetDisabledGameplay() const { return bDisabledGameplay; }
 };

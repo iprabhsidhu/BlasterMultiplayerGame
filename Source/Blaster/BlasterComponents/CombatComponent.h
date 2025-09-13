@@ -26,6 +26,9 @@ public:
 	void EquipWeapon(class AWeapon* WeaponToEquip);
 	void Reload();
 
+	// Fire Handling
+	void FireButtonPressed(bool bPressed);
+
 	UFUNCTION(BlueprintCallable, Category = "Combat | Reload")
 	void FinishReloading();
 
@@ -37,9 +40,6 @@ protected:
 	void ServerSetAiming(bool bIsAiming);
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
-
-	// Fire Handling
-	void FireButtonPressed(bool bPressed);
 
 	void Fire();
 

@@ -77,11 +77,14 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
 	DOREPLIFETIME(ABlasterCharacter, Health);
+	DOREPLIFETIME(ABlasterCharacter, bDisabledGameplay);
 }
 
 
 void ABlasterCharacter::MoveForward(float Value)
 {
+	if (bDisabledGameplay) return;
+
 	if (Controller && Value != 0.f)
 	{
 		const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
@@ -92,6 +95,8 @@ void ABlasterCharacter::MoveForward(float Value)
 
 void ABlasterCharacter::MoveSide(float Value)
 {
+	if (bDisabledGameplay) return;
+
 	if (Controller && Value != 0.f)
 	{
 		const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
@@ -112,6 +117,8 @@ void ABlasterCharacter::Turn(float Value)
 
 void ABlasterCharacter::Jump()
 {
+	if (bDisabledGameplay) return;
+
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -159,6 +166,8 @@ void ABlasterCharacter::SimProxiesTurn()
 
 void ABlasterCharacter::EquipButtonPressed()
 {
+	if (bDisabledGameplay) return;
+
 	if (Combat)
 		if (HasAuthority())
 		{
@@ -172,6 +181,8 @@ void ABlasterCharacter::EquipButtonPressed()
 
 void ABlasterCharacter::CrouchButtonPressed()
 {
+	if (bDisabledGameplay) return;
+
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -184,6 +195,8 @@ void ABlasterCharacter::CrouchButtonPressed()
 
 void ABlasterCharacter::AimButtonPressed()
 {
+	if (bDisabledGameplay) return;
+
 	if (Combat)
 	{
 		Combat->SetAiming(true);
@@ -192,6 +205,8 @@ void ABlasterCharacter::AimButtonPressed()
 
 void ABlasterCharacter::AimButtonReleased()
 {
+	if (bDisabledGameplay) return;
+
 	if (Combat)
 	{
 		Combat->SetAiming(false);
@@ -200,6 +215,8 @@ void ABlasterCharacter::AimButtonReleased()
 
 void ABlasterCharacter::ReloadButtonPressed()
 {
+	if (bDisabledGameplay) return;
+
 	if (Combat)
 	{
 		Combat->Reload();
@@ -254,11 +271,13 @@ void ABlasterCharacter::CalculateAO_Pitch()
 
 void ABlasterCharacter::FireButtonPressed()
 {
+	if (bDisabledGameplay) return;
 	if (Combat) Combat->FireButtonPressed(true);
 }
 
 void ABlasterCharacter::FireButtonReleased()
 {
+	if (bDisabledGameplay) return;
 	if (Combat) Combat->FireButtonPressed(false);
 }
 
@@ -300,6 +319,31 @@ void ABlasterCharacter::PollInit()
 			BlasterPlayerState->AddToScore(0.f);
 			BlasterPlayerState->AddToDefeats(0.f);
 		}
+	}
+}
+
+void ABlasterCharacter::RotateInPlace(float DeltaTime)
+{
+	if (bDisabledGameplay)
+	{
+		bUseControllerRotationYaw = false;
+		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+
+		return;
+	}
+
+	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled())
+	{
+		AimOffset(DeltaTime);
+	}
+	else
+	{
+		TimeSinceLastMovementReplication += DeltaTime;
+		if (TimeSinceLastMovementReplication > 0.25f)
+		{
+			OnRep_ReplicatedMovement();
+		}
+		CalculateAO_Pitch();
 	}
 }
 
@@ -466,20 +510,7 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled())
-	{
-		AimOffset(DeltaTime);
-	}
-	else
-	{
-		TimeSinceLastMovementReplication += DeltaTime;
-		if (TimeSinceLastMovementReplication > 0.25f)
-		{
-			OnRep_ReplicatedMovement();
-		}
-		CalculateAO_Pitch();
-	}
-
+	RotateInPlace(DeltaTime);
 	HideCameraIfCharacterClose();
 	PollInit();
 }
@@ -643,11 +674,7 @@ void ABlasterCharacter::MulticastElim_Implementation()
 	// Disable Character Movement
 	GetCharacterMovement()->DisableMovement();
 	GetCharacterMovement()->StopMovementImmediately();
-
-	if (BlasterPlayerController)
-	{
-		DisableInput(BlasterPlayerController);
-	}
+	bDisabledGameplay = true;
 
 	// Dissable Collisions
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);

@@ -11,6 +11,7 @@
 #include "Blaster/HUD/Annoucment.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Blaster/BlasterComponents/CombatComponent.h"
 
 void ABlasterPlayerController::BeginPlay()
 {
@@ -41,11 +42,11 @@ void ABlasterPlayerController::OnPossess(APawn* InPawn)
 void ABlasterPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	UE_LOG(LogTemp, Warning, TEXT("1. Match State: %s"), *MatchState.ToString());
 	SetHUDTime();
 	CheckTimeSync(DeltaTime);
 	PollInit();
-	UE_LOG(LogTemp, Warning, TEXT("Match State: %s"), *MatchState.ToString());
-
+	UE_LOG(LogTemp, Warning, TEXT("2. Match State: %s"), *MatchState.ToString());
 }
 
 void ABlasterPlayerController::PollInit()
@@ -116,7 +117,7 @@ void ABlasterPlayerController::ServerCheckMatchState_Implementation()
 		CooldownTime = GameMode->CooldownTime;
 		LevelStartingTime = GameMode->LevelStartingTime;
 		MatchState = GameMode->GetMatchState();
-		ClientJoinMidgame(MatchState, WarmupTime, MatchTime, LevelStartingTime);
+		ClientJoinMidgame(MatchState, WarmupTime, MatchTime, CooldownTime,LevelStartingTime);
 
 		if (BlasterHUD && MatchState == MatchState::WaitingToStart)
 		{
@@ -190,7 +191,7 @@ void ABlasterPlayerController::HandleCooldown()
 		bool bValidHUD = (
 			BlasterHUD->Announcement
 			&& BlasterHUD->Announcement->AnnouncementText
-			&& BlasterHUD->Announcement->infoText
+			&& BlasterHUD->Announcement->InfoText
 			);
 		
 		if (bValidHUD)
@@ -199,8 +200,15 @@ void ABlasterPlayerController::HandleCooldown()
 
 			FString Announcement("New match starts in: ");
 			BlasterHUD->Announcement->AnnouncementText->SetText(FText::FromString(Announcement));
-			BlasterHUD->Announcement->infoText->SetText(FText());
+			BlasterHUD->Announcement->InfoText->SetText(FText());
 		}
+	}
+
+	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+	if (BlasterCharacter && BlasterCharacter->GetCombat())
+	{
+		BlasterCharacter->bDisabledGameplay = true;
+		BlasterCharacter->GetCombat()->FireButtonPressed(false);
 	}
 }
 
@@ -213,7 +221,7 @@ void ABlasterPlayerController::SetHUDTime()
 	else if (MatchState == MatchState::InProgress) TimeLeft = WarmupTime + MatchTime - GetServerTime() + LevelStartingTime;
 	else if (MatchState == MatchState::Cooldown) TimeLeft = CooldownTime + WarmupTime + MatchTime - GetServerTime() + LevelStartingTime;
 	uint32 SecondsLeft = FMath::CeilToInt(TimeLeft);
-
+	UE_LOG(LogTemp, Warning, TEXT("TimeLeft: %d"), TimeLeft);
 	if (HasAuthority())
 	{
 		BlasterGameMode = BlasterGameMode == nullptr ? Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this)) : BlasterGameMode;
