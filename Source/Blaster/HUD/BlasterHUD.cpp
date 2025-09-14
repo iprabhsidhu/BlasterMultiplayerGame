@@ -22,8 +22,21 @@ void ABlasterHUD::AddCharacterOverlay()
 
 void ABlasterHUD::AddAnnouncement()
 {
+	if (Announcement) // guard: don't create a second one
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Announcement already exists — not creating another."));
+		return;
+	}
+
+	if (AnnouncementClass == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("AnnouncementClass is null."));
+		return;
+	}
+
+
 	APlayerController* PlayerController = GetOwningPlayerController();
-	if (PlayerController && CharacterOverlayClass)
+	if (PlayerController && AnnouncementClass)
 	{
 		Announcement = CreateWidget<UAnnoucment>(PlayerController, AnnouncementClass);
 		Announcement->AddToViewport();
