@@ -170,7 +170,7 @@ void ABlasterPlayerController::HandleMatchHasStarted()
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 	if (BlasterHUD)
 	{
-		if(BlasterHUD->CharacterOverlay) BlasterHUD->AddCharacterOverlay();
+		if(BlasterHUD->CharacterOverlayClass) BlasterHUD->AddCharacterOverlay();
 		if (BlasterHUD->Announcement)
 		{
 			BlasterHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
